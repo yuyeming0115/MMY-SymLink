@@ -25,6 +25,23 @@ from PySide6.QtWidgets import (
 import linker
 
 
+def _resource_path(name: str) -> str:
+    """兼容源码运行与 PyInstaller 打包后的资源路径。
+
+    打包后 PyInstaller 把 --add-data 的文件解到 sys._MEIPASS；
+    源码运行时资源在项目根目录或 assets/ 下。
+    """
+    if hasattr(sys, "_MEIPASS"):
+        base = Path(sys._MEIPASS)
+    else:
+        base = Path(__file__).resolve().parent
+    # 打包时 ico 放在 bundle 根；源码运行时在 assets/
+    for cand in (base / name, base / "assets" / name):
+        if cand.exists():
+            return str(cand)
+    return str(base / "assets" / name)
+
+
 # --------------------------------------------------------------------------- #
 # DropZone：可拖拽的区域，含内置预设 chip
 # --------------------------------------------------------------------------- #
@@ -704,6 +721,10 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("MMY-SymLink")
+    # 设置窗口/任务栏图标（左上角 + 任务栏均由此生效）
+    icon_path = _resource_path("MMY-SymLink.ico")
+    if Path(icon_path).exists():
+        app.setWindowIcon(QIcon(icon_path))
     # 全局字体
     f = app.font()
     f.setFamily("Microsoft YaHei UI")

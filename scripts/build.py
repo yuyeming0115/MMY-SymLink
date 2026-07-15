@@ -55,6 +55,8 @@ def build_windows(version: str) -> Path:
     clean_old_outputs(version_dir)
 
     ico = ASSETS_DIR / "MMY-SymLink.ico"
+    # --add-data 把 ico 一并打入 exe，运行时由 sys._MEIPASS 读取，
+    # 用于 QApplication.setWindowIcon（窗口左上角 + 任务栏图标）
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",
@@ -63,6 +65,7 @@ def build_windows(version: str) -> Path:
         "--clean",
         f"--name={APP_NAME}",
         f"--icon={ico}",
+        f"--add-data={ico};.",
         f"--distpath={version_dir}",
         f"--workpath={BUILD_DIR}",
         "--specpath", str(PROJECT_ROOT),
@@ -84,6 +87,9 @@ def build_macos(version: str) -> Path:
     clean_old_outputs(version_dir)
 
     icns = ASSETS_DIR / "MMY-SymLink.icns"
+    ico = ASSETS_DIR / "MMY-SymLink.ico"
+    add_data_icns = f"--add-data={icns}:."
+    add_data_ico = f"--add-data={ico}:." if ico.exists() else None
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--windowed",
@@ -92,12 +98,15 @@ def build_macos(version: str) -> Path:
         "--clean",
         f"--name={APP_NAME}",
         f"--icon={icns}",
+        add_data_icns,
         f"--distpath={version_dir}",
         f"--workpath={BUILD_DIR}",
         "--specpath", str(PROJECT_ROOT),
         "--osx-bundle-identifier", "com.mmy.mmy-symlink",
         str(ENTRY),
     ]
+    if add_data_ico:
+        cmd.insert(-1, add_data_ico)
     run(cmd, cwd=PROJECT_ROOT)
 
     app = version_dir / f"{APP_NAME}.app"
